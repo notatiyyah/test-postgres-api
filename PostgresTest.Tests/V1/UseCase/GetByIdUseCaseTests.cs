@@ -19,6 +19,5 @@ namespace PostgresTest.Tests.V1.UseCase
         }
 
         //TODO: test to check that the use case retrieves the correct record from the database.
-        //Guidance on unit testing and example of mocking can be found here https://github.com/LBHackney-IT/lbh-postgres-test/wiki/Writing-Unit-Tests
     }
 }

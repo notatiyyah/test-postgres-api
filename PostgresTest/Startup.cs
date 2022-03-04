@@ -46,8 +46,7 @@ namespace PostgresTest
 
         public IConfiguration Configuration { get; }
         private static List<ApiVersionDescription> _apiVersions { get; set; }
-        //TODO update the below to the name of your API
-        private const string ApiName = "Your API Name";
+        private const string ApiName = "PostgresTest";
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -128,8 +127,6 @@ namespace PostgresTest
             services.AddLogCallAspect();
 
             ConfigureDbContext(services);
-            //TODO: For DynamoDb, remove the line above and uncomment the line below.
-            //services.ConfigureDynamoDB();
 
             RegisterGateways(services);
             RegisterUseCases(services);
@@ -148,9 +145,6 @@ namespace PostgresTest
         private static void RegisterGateways(IServiceCollection services)
         {
             services.AddScoped<IExampleGateway, ExampleGateway>();
-
-            //TODO: For DynamoDb, remove the line above and uncomment the line below.
-            //services.AddScoped<IExampleDynamoGateway, DynamoDbGateway>();
         }
 
         private static void RegisterUseCases(IServiceCollection services)

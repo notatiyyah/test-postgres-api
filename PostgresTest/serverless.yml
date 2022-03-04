@@ -8,8 +8,6 @@ provider:
     apiGateway: true
   vpc: ${self:custom.vpc.${opt:stage}}
   stage: ${opt:stage}
-  # TODO: Enable this line if DynamoDb is in use
-  #account: ${opt:account}
   region: eu-west-2
   apiKeys:
     - secureAccess:
@@ -21,7 +19,6 @@ provider:
           rateLimit: 100
 
 package:
-# TODO: Rename zipfile in build.sh and build.cmd to match this
   artifact: ./bin/release/netcoreapp3.1/postgres-test.zip
 
 functions:
@@ -31,7 +28,6 @@ functions:
     role: lambdaExecutionRole
     environment:
 # TODO: Create ssm variables for this API's postgres mirror then rename postgres-test below to match api name
-# TODO: Remove this line if DynamoDb is being used
       CONNECTION_STRING: Host=${ssm:/postgres-test/${self:provider.stage}/postgres-hostname};Port=${ssm:/postgres-test/${self:provider.stage}/postgres-port};Database=postgres-test-mirror;Username=${ssm:/postgres-test/${self:provider.stage}/postgres-username};Password=${ssm:/postgres-test/${self:provider.stage}/postgres-password}
     events:
       - http:
