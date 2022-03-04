@@ -4,19 +4,19 @@ setup:
 
 .PHONY: build
 build:
-	docker-compose build base-api
+	docker-compose build postgres-test
 
 .PHONY: serve
 serve:
-	docker-compose build base-api && docker-compose up base-api
+	docker-compose build postgres-test && docker-compose up postgres-test
 
 .PHONY: shell
 shell:
-	docker-compose run base-api bash
+	docker-compose run postgres-test bash
 
 .PHONY: test
 test:
-	docker-compose up test-database & docker-compose build base-api-test && docker-compose up base-api-test
+	docker-compose up test-database & docker-compose build postgres-test-test && docker-compose up postgres-test-test
 
 .PHONY: lint
 lint:
