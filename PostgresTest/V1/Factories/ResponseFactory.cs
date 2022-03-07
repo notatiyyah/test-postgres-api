@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using PostgresTest.V1.Boundary.Response;
 using PostgresTest.V1.Domain;
 
@@ -16,11 +14,6 @@ namespace PostgresTest.V1.Factories
                 LastName = domain.LastName,
                 Email = domain.Email
             };
-        }
-
-        public static List<UserResponse> ToResponse(this IEnumerable<User> domainList)
-        {
-            return domainList.Select(domain => domain.ToResponse()).ToList();
         }
     }
 }
