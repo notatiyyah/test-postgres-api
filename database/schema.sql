@@ -1,4 +1,6 @@
-CREATE TABLE example_table (
-    created_at timestamp ,
-    id SERIAL PRIMARY KEY
+CREATE TABLE users (
+    id uuid,
+    first_name varchar(255),
+    last_name varchar(255),
+    email varchar(255)
 );
