@@ -12,28 +12,28 @@ namespace PostgresTest.Tests.V1.Factories
     {
         private readonly Fixture _fixture = new Fixture();
 
-        //TODO: add assertions for all the fields being mapped in `EntityFactory.ToDomain()`. Also be sure to add test cases for
-        // any edge cases that might exist.
         [Test]
         public void CanMapADatabaseEntityToADomainObject()
         {
-            var databaseEntity = _fixture.Create<DatabaseEntity>();
+            var databaseEntity = _fixture.Create<UserDb>();
             var entity = databaseEntity.ToDomain();
 
             databaseEntity.Id.Should().Be(entity.Id);
-            databaseEntity.CreatedAt.Should().BeSameDateAs(entity.CreatedAt);
+            databaseEntity.FirstName.Should().Be(entity.FirstName);
+            databaseEntity.LastName.Should().Be(entity.LastName);
+            databaseEntity.Email.Should().Be(entity.Email);
         }
 
-        //TODO: add assertions for all the fields being mapped in `EntityFactory.ToDatabase()`. Also be sure to add test cases for
-        // any edge cases that might exist.
         [Test]
         public void CanMapADomainEntityToADatabaseObject()
         {
-            var entity = _fixture.Create<Entity>();
+            var entity = _fixture.Create<User>();
             var databaseEntity = entity.ToDatabase();
 
             entity.Id.Should().Be(databaseEntity.Id);
-            entity.CreatedAt.Should().BeSameDateAs(databaseEntity.CreatedAt);
+            entity.FirstName.Should().Be(databaseEntity.FirstName);
+            entity.LastName.Should().Be(databaseEntity.LastName);
+            entity.Email.Should().Be(databaseEntity.Email);
         }
     }
 }
