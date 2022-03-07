@@ -1,16 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using PostgresTest.V1.Controllers;
+using Amazon;
+using Amazon.XRay.Recorder.Core;
 using Amazon.XRay.Recorder.Handlers.AwsSdk;
-using PostgresTest.V1.Gateways;
-using PostgresTest.V1.Infrastructure;
-using PostgresTest.V1.UseCase;
-using PostgresTest.V1.UseCase.Interfaces;
-using PostgresTest.Versioning;
+using Hackney.Core.HealthCheck;
+using Hackney.Core.Http;
+using Hackney.Core.JWT;
+using Hackney.Core.Logging;
+using Hackney.Core.Middleware.CorrelationId;
+using Hackney.Core.Middleware.Exception;
+using Hackney.Core.Middleware.Logging;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -21,16 +20,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using PostgresTest.V1.Gateways;
+using PostgresTest.V1.Infrastructure;
+using PostgresTest.V1.UseCase;
+using PostgresTest.V1.UseCase.Interfaces;
+using PostgresTest.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Hackney.Core.Logging;
-using Hackney.Core.Middleware.Logging;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Hackney.Core.HealthCheck;
-using Hackney.Core.Middleware.CorrelationId;
-using Hackney.Core.DynamoDb.HealthCheck;
-using Hackney.Core.DynamoDb;
-using Hackney.Core.Middleware.Exception;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json.Serialization;
 
 namespace PostgresTest
 {
@@ -40,20 +42,25 @@ namespace PostgresTest
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-
             AWSSDKHandler.RegisterXRayForAllServices();
         }
 
         public IConfiguration Configuration { get; }
         private static List<ApiVersionDescription> _apiVersions { get; set; }
-        private const string ApiName = "PostgresTest";
+        private const string ApiName = "bookstore-api";
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services
                 .AddMvc()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+
             services.AddApiVersioning(o =>
             {
                 o.DefaultApiVersion = new ApiVersion(1, 0);
@@ -62,8 +69,6 @@ namespace PostgresTest
             });
 
             services.AddSingleton<IApiVersionDescriptionProvider, DefaultApiVersionDescriptionProvider>();
-
-            services.AddDynamoDbHealthCheck<DatabaseEntity>();
 
             services.AddSwaggerGen(c =>
             {
@@ -123,13 +128,24 @@ namespace PostgresTest
             });
 
             services.ConfigureLambdaLogging(Configuration);
+            AWSXRayRecorder.InitializeInstance(Configuration);
+            AWSXRayRecorder.RegisterLogger(LoggingOptions.SystemDiagnostics);
 
             services.AddLogCallAspect();
-
             ConfigureDbContext(services);
+            services.AddHealthChecks();
 
             RegisterGateways(services);
             RegisterUseCases(services);
+
+            ConfigureHackneyCoreDI(services);
+
+        }
+
+        private static void ConfigureHackneyCoreDI(IServiceCollection services)
+        {
+            services.AddTokenFactory()
+                .AddHttpContextWrapper();
         }
 
         private static void ConfigureDbContext(IServiceCollection services)
@@ -140,31 +156,24 @@ namespace PostgresTest
                 opt => opt.UseNpgsql(connectionString).AddXRayInterceptor(true));
         }
 
-
-
         private static void RegisterGateways(IServiceCollection services)
         {
-            services.AddScoped<IExampleGateway, ExampleGateway>();
+            services.AddScoped<IUserGateway, UserGateway>();
         }
 
         private static void RegisterUseCases(IServiceCollection services)
         {
-            services.AddScoped<IGetAllUseCase, GetAllUseCase>();
-            services.AddScoped<IGetByIdUseCase, GetByIdUseCase>();
+            services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public static void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             app.UseCors(builder => builder
-                  .AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .WithExposedHeaders("x-correlation-id"));
-
-            app.UseCorrelationId();
-            app.UseLoggingScope();
-            app.UseCustomExceptionHandler(logger);
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .WithExposedHeaders("x-correlation-id"));
 
             if (env.IsDevelopment())
             {
@@ -175,7 +184,10 @@ namespace PostgresTest
                 app.UseHsts();
             }
 
-            app.UseXRay("postgres-test");
+            app.UseCorrelationId();
+            app.UseLoggingScope();
+            app.UseCustomExceptionHandler(logger);
+            app.UseXRay("bookstore-api");
 
 
             //Get All ApiVersions,

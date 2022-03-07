@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id uuid,
     first_name varchar(255),
     last_name varchar(255),
     email varchar(255)
